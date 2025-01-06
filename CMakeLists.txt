@@ -8,7 +8,7 @@ project(easy_apollo)
 set(CMAKE_CXX_STANDARD 17)
 # set(CMAKE_BUILD_TYPE "Debug")
 
-set(CMAKE_CXX_FLAGS   "${CMAKE_CXX_FLAGS} -std=c++17  -pthread -fPIC")    # c++17
+set(CMAKE_CXX_FLAGS   "${CMAKE_CXX_FLAGS} -std=c++17  -pthread -fPIC ")    # c++17
 # set(CMAKE_CXX_FLAGS   "${CMAKE_CXX_FLAGS} -g")                     # 调试信息
 #set(CMAKE_CXX_FLAGS   "-Wall")                  # 开启所有警告
 # set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS} -O0" )             # 调试包不优化
@@ -87,7 +87,7 @@ link_directories(${THIRD_LIB_DIR}/gflags/lib)
 include_directories(${THIRD_LIB_DIR}/glog/include)
 link_directories(${THIRD_LIB_DIR}/glog/lib)
 # set(DEP_LIBS ${DEP_LIBS} glog)
-find_package(glog REQUIRED)
+#find_package(glog REQUIRED)
 
 #gtest
 # find_package(gtest REQUIRED)
@@ -107,7 +107,7 @@ add_definitions(-DC10_USE_GLOG)
 # message(STATUS "Torch_INCLUDE_DIRS: ${TORCH_INCLUDE_DIRS}")
 
 # ubuntu 1804
-include_directories(/usr/include/python3.6)
+include_directories(/usr/include/python3.10)
 
 #ubuntu 20.04
 # include_directories(/usr/include/python3.8)
@@ -135,15 +135,11 @@ message(STATUS "opencv_LIBRARIES: ${OpenCV_LIBRARIES}")
 message(STATUS "opencv_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}")
 
 
-# include_directories(${THIRD_LIB_DIR}/proj4/include)
-# link_directories(${THIRD_LIB_DIR}/proj4/lib)
-# find_package(proj4)
-# include_directories(${PROJ4_INCLUDE_DIRS})
+include_directories(${THIRD_LIB_DIR}/proj/include)
+link_directories(${THIRD_LIB_DIR}/proj/lib)
+#include_directories(/usr/local/include/proj)
+#include_directories(/usr/local/include/)
 
-# message(STATUS "Found proj4 version in: " ${PROJ4_VERSION})
-# message(STATUS "PROJ4_LIBRARY_DIRS: ${PROJ4_LIBRARY_DIRS}")
-# message(STATUS "PROJ4_LIBRARY: ${PROJ4_LIBRARIES}")
-# message(STATUS "PROJ4_INCLUDE_DIRS: ${PROJ4_INCLUDE_DIRS}")
 
 
 

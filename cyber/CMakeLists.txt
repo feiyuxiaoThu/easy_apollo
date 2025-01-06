@@ -40,11 +40,11 @@ include_directories(${THIRD_LIB_DIR}/gflags/include)
 link_directories(${THIRD_LIB_DIR}/gflags/lib)
 
 #glog
-# include_directories(${THIRD_LIB_DIR}/glog/include)
-# link_directories(${THIRD_LIB_DIR}/glog/lib)
+include_directories(${THIRD_LIB_DIR}/glog/include)
+link_directories(${THIRD_LIB_DIR}/glog/lib)
 # set(DEP_LIBS ${DEP_LIBS} glog)
 
-find_package(glog REQUIRED)
+#find_package(glog REQUIRED)
 # find_package(Python REQUIRED COMPONENTS Interpreter Development)
 # pkg_check_modules(Python REQUIRED python3)
 find_package(Protobuf REQUIRED)

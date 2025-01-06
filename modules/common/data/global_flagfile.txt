@@ -56,7 +56,7 @@
 # --map_dir=/apollo/modules/map/data/borregas_ave
 
 --replay_mode=false
-# --replay_mode=true
+#--replay_mode=true
 
 --use_bev_perception=true
 # --use_bev_perception=false

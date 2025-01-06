@@ -5,7 +5,9 @@ set -e
 cd /tmp
 rm -rf PROJ
 
-git clone --depth 1 --recursive --branch 5.0 git@github.com:OSGeo/PROJ.git
+INSTALL_PREFIX="$CURRENT_PATH/../third_party/install/proj"
+
+git clone --depth 1 --recursive --branch 6.0 git@github.com:OSGeo/PROJ.git
 
 
 cd PROJ
@@ -15,7 +17,7 @@ sudo apt-get install sqlite3
 mkdir build
 cd build
 # cmake .. -DBUILD_SHARED_LIBS=ON
-cmake ..
+cmake .. -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/mnt/easy_apollo/third_party/install/proj 
 
 make -j8
 

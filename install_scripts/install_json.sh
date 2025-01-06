@@ -11,7 +11,8 @@ cd $CURRENT_PATH
 cd ..
 cd third_party
 
-git clone --depth 1 --branch v3.8.0 git@github.com:nlohmann/json.git
+#git clone --depth 1 --branch v3.8.0 git@github.com:nlohmann/json.git
+git clone --depth 1 --branch v3.11.3 git@github.com:nlohmann/json.git
 
 cd json
 
