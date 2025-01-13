@@ -49,6 +49,7 @@ FrenetFramePoint FrenetFramePath::GetNearestPoint(const SLBoundary& sl) const
 {
     auto it_lower = std::lower_bound(begin(), end(), sl.start_s(),
                                      LowerBoundComparator);
+    //* std::lower_bound 是一个标准库函数，用于在有序范围内查找第一个不小于给定值的元素
     if (it_lower == end())
     {
         return back();

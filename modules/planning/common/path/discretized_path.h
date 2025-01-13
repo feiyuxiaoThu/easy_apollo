@@ -40,6 +40,12 @@ public:
 
     explicit DiscretizedPath(std::vector<common::PathPoint> path_points);
 
+    //! 滿足google style 的構造函數
+    /*
+    
+    被声明为explicit的构造函数通常比其 non-explicit 兄弟更受欢迎, 因为它们禁止编译器执行非预期 (往往也不被期望) 的类型转换. 除非我有一个好理由允许构造函数被用于隐式类型转换, 否则我会把它声明为explicit. 我鼓励你遵循相同的政策.
+    */
+
     // 轨迹长度
     double Length() const;
 
@@ -57,6 +63,9 @@ public:
         for (size_t i = 0; i < size(); i++)
         {
             const common::PathPoint &point = at(i);
+            /*
+            在C++中，at(i) 是一个成员函数，它通常用于访问容器（如 std::vector、std::array、std::deque 等）中的元素。at(i) 函数的行为类似于 operator[]，但它提供了边界检查，如果索引 i 超出了容器的范围，at(i) 会抛出一个 std::out_of_range 异常，而 operator[] 则会导致未定义行为。
+            */
             AINFO << point.DebugString();
         }
 

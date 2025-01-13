@@ -35,7 +35,7 @@ namespace apollo
 namespace planning
 {
 using apollo::common::PathPoint;
-using apollo::common::PointENU;
+using apollo::common::PointENU; //geometry.proto
 using apollo::common::SLPoint;
 using apollo::common::math::CartesianFrenetConverter;
 using apollo::common::util::PointFactory;
@@ -107,6 +107,7 @@ bool PathData::SetPathPointDecisionGuide(
                   "or world frame trajectory is empty. ";
         AINFO << path_label_;
 
+        //? 似乎 discretized_path 为全局坐标，即依赖全局定位
         return false;
     }
     
@@ -143,12 +144,14 @@ void PathData::SetReferenceLine(const ReferenceLine *reference_line)
 
 common::PathPoint PathData::GetPathPointWithPathS(const double s) const
 {
+    //* 离散点的投影匹配
     return discretized_path_.Evaluate(s);
 }
 
 bool PathData::GetPathPointWithRefS(const double ref_s,
                                     common::PathPoint *const path_point) const
 {
+    //* 根据给定的参考 s 值（路径上的弧长）在 PathData 中找到对应的 PathPoint 并返回.如果 ref_s 与 frenet_path_ 中的某个点的 s 值足够接近，则直接返回对应的点。否则，使用线性插值的方法在 frenet_path_ 中的两个点之间计算出 ref_s 对应的点。
     ACHECK(reference_line_);
     DCHECK_EQ(discretized_path_.size(), frenet_path_.size());
     if (ref_s < 0)
@@ -299,6 +302,7 @@ bool PathData::XYToSL(const DiscretizedPath &discretized_path,
 
 bool PathData::LeftTrimWithRefS(const common::FrenetFramePoint &frenet_point)
 {
+    //* 根据给定的 FrenetFramePoint 对象，对 PathData 中的 frenet_path_ 进行修剪，只保留从该点开始到路径末尾的部分。
     if (reference_line_ == nullptr)
     {
         return false;

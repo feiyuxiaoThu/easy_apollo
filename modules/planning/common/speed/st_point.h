@@ -38,6 +38,7 @@ public:
 
     double x() const = delete;
     double y() const = delete;
+    //* 删除两个容易误解的基类函数，重新定义自己的s和t函数
 
     double s() const;
     double t() const;

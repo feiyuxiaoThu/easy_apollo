@@ -33,6 +33,10 @@ using apollo::common::PathPoint;
 
 DiscretizedPath::DiscretizedPath(std::vector<PathPoint> path_points) :
     std::vector<PathPoint>(std::move(path_points))
+    //! 好的構造函數
+    /*
+    std::move(path_points) 是一个右值引用，它将 path_points 的所有权转移给基类，从而避免了不必要的拷贝操作。
+    */
 {
 }
 
@@ -56,6 +60,7 @@ double DiscretizedPath::max_s() const
 
 PathPoint DiscretizedPath::Evaluate(const double path_s) const
 {
+    //* it_lower 是一个迭代器，指向路径上第一个 s 值大于或等于 path_s 的点。
     ACHECK(!empty());
     auto it_lower = QueryLowerBound(path_s);
     if (it_lower == begin())
@@ -70,11 +75,14 @@ PathPoint DiscretizedPath::Evaluate(const double path_s) const
                                                              *it_lower, path_s);
 }
 
+
 std::vector<PathPoint>::const_iterator DiscretizedPath::QueryLowerBound(
         const double path_s) const
 {
     auto func = [](const PathPoint &tp, const double path_s) {
         return tp.s() < path_s;
+    //! func 是一个 lambda 表达式，用于比较路径点的 s 值和 path_s。这个 lambda 表达式将作为 std::lower_bound 函数的比较函数。
+
     };
     return std::lower_bound(begin(), end(), path_s, func);
 }

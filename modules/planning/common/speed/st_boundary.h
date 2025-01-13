@@ -71,6 +71,8 @@ public:
     explicit STBoundary(const common::math::Box2d& box) = delete;
     explicit STBoundary(std::vector<common::math::Vec2d> points) = delete;
 
+    //! 为了限制 STBoundary 类的构造方式，确保只能通过特定的构造函数或方法来创建 STBoundary 实例，从而提高代码的安全性和可维护性
+
     /** @brief Wrapper of the constructor (old).
      */
     static STBoundary CreateInstance(const std::vector<STPoint>& lower_points,
