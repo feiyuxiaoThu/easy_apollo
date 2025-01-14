@@ -50,6 +50,7 @@ void SpeedData::AppendSpeedPoint(const double s, const double time,
                                  const double v, const double a,
                                  const double da)
 {
+    //* 定义了一个静态的互斥锁 mutex_speedpoint，用于确保在多线程环境下对 SpeedData 对象的访问是线程安全的。然后，使用 UNIQUE_LOCK_MULTITHREAD 宏来锁定这个互斥锁。
     static std::mutex mutex_speedpoint;
     UNIQUE_LOCK_MULTITHREAD(mutex_speedpoint);
 
@@ -63,6 +64,7 @@ void SpeedData::AppendSpeedPoint(const double s, const double time,
 bool SpeedData::EvaluateByTime(const double t,
                                common::SpeedPoint* const speed_point) const
 {
+    //* 在给定的时间 t 下，从 SpeedData 对象中获取对应的速度点。通过使用 std::lower_bound 函数和线性插值，可以高效地计算出在任意时间点的速度、加速度等信息。
     if (size() < 2)
     {
         return false;

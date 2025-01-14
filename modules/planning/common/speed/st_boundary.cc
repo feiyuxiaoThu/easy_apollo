@@ -60,7 +60,7 @@ STBoundary::STBoundary(
         points_.emplace_back(rit->t(), rit->s());
     }
 
-    BuildFromPoints();
+    BuildFromPoints(); //* 据给定的点集构建一个二维多边形，并进行一些必要的计算和检查。
 
     for (const auto& point : lower_points_)
     {
@@ -73,7 +73,7 @@ STBoundary::STBoundary(
     min_t_ = lower_points_.front().t();
     max_t_ = lower_points_.back().t();
 
-    obstacle_road_right_ending_t_ = std::numeric_limits<double>::lowest();
+    obstacle_road_right_ending_t_ = std::numeric_limits<double>::lowest(); //* 初始化为 double 类型的最小值。
 }
 
 STBoundary STBoundary::CreateInstance(const std::vector<STPoint>& lower_points,
@@ -90,6 +90,7 @@ STBoundary STBoundary::CreateInstance(const std::vector<STPoint>& lower_points,
         point_pairs.emplace_back(
                 STPoint(lower_points.at(i).s(), lower_points.at(i).t()),
                 STPoint(upper_points.at(i).s(), upper_points.at(i).t()));
+                //* 注意必须显式地调用构造函数
     }
     return STBoundary(point_pairs);
 }
@@ -174,6 +175,7 @@ bool STBoundary::GetUnblockSRange(const double curr_time, double* s_upper,
                                     : (curr_time - upper_points_[left].t()) /
                                               (upper_points_[right].t() -
                                                upper_points_[left].t()));
+    //* 计算当前时间与左右边界点之间的插值比例 r，并根据该比例计算上边界和下边界的交叉点速度 upper_cross_s 和 lower_cross_s
 
     double upper_cross_s =
             upper_points_[left].s() +
@@ -200,6 +202,13 @@ bool STBoundary::GetUnblockSRange(const double curr_time, double* s_upper,
 
         return false;
     }
+
+    //* 根据边界类型调整速度范围：
+    /*
+    如果边界类型是 STOP、YIELD 或 FOLLOW，则将 s_upper 设置为 lower_cross_s，表示速度不能超过下边界。
+    如果边界类型是 OVERTAKE，则将 s_lower 设置为 upper_cross_s 和当前 s_lower 中的最大值，表示速度不能低于上边界。
+    如果边界类型不支持，则记录调试信息并返回 false。
+    */
     return true;
 }
 
@@ -252,6 +261,7 @@ bool STBoundary::GetBoundarySlopes(const double curr_time, double* ds_upper,
     double prev_s_upper = 0.0;
     double prev_s_lower = 0.0;
     bool has_prev = GetBoundarySRange(t_prev, &prev_s_upper, &prev_s_lower);
+    //* 使用 GetBoundarySRange 函数获取前一个时间点 t_prev 的速度边界，并将结果存储在 prev_s_upper 和 prev_s_lower 中。has_prev 变量用于记录是否成功获取到前一个时间点的速度边界。
     double t_next = curr_time + kTimeIncrement;
     double next_s_upper = 0.0;
     double next_s_lower = 0.0;
@@ -259,6 +269,8 @@ bool STBoundary::GetBoundarySlopes(const double curr_time, double* ds_upper,
     double curr_s_upper = 0.0;
     double curr_s_lower = 0.0;
     GetBoundarySRange(curr_time, &curr_s_upper, &curr_s_lower);
+
+    //* 根据是否成功获取到前一个和后一个时间点的速度边界，计算速度边界的斜率。如果前一个和后一个时间点的速度边界都成功获取到，则使用前后两个时间点的速度变化来计算斜率的平均值。如果只获取到前一个或后一个时间点的速度边界，则使用当前时间点和前一个或后一个时间点的速度变化来计算斜率。
     if (!has_prev && !has_next)
     {
         return false;
@@ -494,6 +506,14 @@ void STBoundary::set_bottom_right_point(STPoint st_point)
 ///////////////////////////////////////////////////////////////////////////////
 // Private functions for internal usage.
 
+//* 这段代码的主要意图是确保 point_pairs 中的每个点对都满足 STBoundary 对象的有效性条件。这些条件包括：
+/*
+point_pairs 的大小至少为 2。
+每个点对的上边界 s 坐标大于或等于下边界 s 坐标。
+每个点对的下边界和上边界在同一时间。
+点对的时间顺序是递增的
+*/
+
 bool STBoundary::IsValid(
         const std::vector<std::pair<STPoint, STPoint>>& point_pairs) const
 {
@@ -550,6 +570,7 @@ bool STBoundary::IsPointNear(const common::math::LineSegment2d& seg,
 void STBoundary::RemoveRedundantPoints(
         std::vector<std::pair<STPoint, STPoint>>* point_pairs)
 {
+    //*通过遍历 ST 图边界上的点对，去除那些在一定距离内与前后点对形成的线段接近的点，从而简化了 ST 图边界的表示。
     if (!point_pairs || point_pairs->size() <= 2)
     {
         return;
@@ -558,6 +579,7 @@ void STBoundary::RemoveRedundantPoints(
     const double kMaxDist = 0.1;
     size_t i = 0;
     size_t j = 1;
+    //* 函数定义了一个常量 kMaxDist，表示两个点之间的最大距离，如果两个点之间的距离小于这个值，则认为它们是冗余的。
 
     while (i < point_pairs->size() && j + 1 < point_pairs->size())
     {
@@ -591,8 +613,10 @@ bool STBoundary::GetIndexRange(const std::vector<STPoint>& points,
         AERROR << "t is out of range. t = " << t;
         return false;
     }
+    //* 定义了一个比较函数 comp，用于比较 STPoint 对象的时间和给定的时间 t。然后，使用 std::lower_bound 函数在 points 向量中查找第一个大于或等于 t 的元素，并计算该元素的索引 index。
     auto comp = [](const STPoint& p, const double t) { return p.t() < t; };
     auto first_ge = std::lower_bound(points.begin(), points.end(), t, comp);
+    //! STL 的标准规范用法
     size_t index = std::distance(points.begin(), first_ge);
     if (index == 0)
     {

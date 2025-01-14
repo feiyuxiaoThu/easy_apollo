@@ -44,6 +44,7 @@ DiscretizedTrajectory::DiscretizedTrajectory(const ADCTrajectory& trajectory)
 {
     assign(trajectory.trajectory_point().begin(),
            trajectory.trajectory_point().end());
+    //* 使用了 std::vector 的 assign 方法来初始化 DiscretizedTrajectory 对象。assign 方法将 trajectory.trajectory_point() 中的所有元素复制到当前对象中。trajectory.trajectory_point() 返回一个包含 ADCTrajectory 中所有轨迹点的迭代器范围。
 }
 
 TrajectoryPoint DiscretizedTrajectory::Evaluate(
