@@ -34,6 +34,8 @@ namespace common
 {
 namespace math
 {
+
+//* 目的是在给定的参考路径reference_line中找到一个最接近指定坐标(x, y)的点
 PathPoint PathMatcher::MatchToPath(const std::vector<PathPoint>& reference_line,
                                    const double x, const double y)
 {
@@ -73,10 +75,12 @@ PathPoint PathMatcher::MatchToPath(const std::vector<PathPoint>& reference_line,
                                reference_line[index_end], x, y);
 }
 
+//! 将一个二维平面上的点转换到Frenet坐标系中
 std::pair<double, double> PathMatcher::GetPathFrenetCoordinate(
         const std::vector<PathPoint>& reference_line, const double x,
         const double y)
 {
+    //* 通过调用MatchToPath函数，找到距离给定点（x, y）最近的路径点。这个路径点包含了路径上的位置信息（x, y）和方向信息（theta）
     auto matched_path_point = MatchToPath(reference_line, x, y);
     double rtheta = matched_path_point.theta();
     double rx = matched_path_point.x();

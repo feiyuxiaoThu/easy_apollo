@@ -68,6 +68,11 @@ SLBoundary PathTimeGraph::ComputeObstacleBoundary(
     double start_l(std::numeric_limits<double>::max());
     double end_l(std::numeric_limits<double>::lowest());
 
+    //* 遍历障碍物顶点
+    /*
+    对于每个顶点，使用PathMatcher::GetPathFrenetCoordinate函数将其转换为Frenet坐标系中的s和l值。
+    更新start_s、end_s、start_l和end_l的值，以确保它们分别记录s和l方向的最小和最大值。
+    */
     for (const auto& point : vertices)
     {
         auto sl_point = PathMatcher::GetPathFrenetCoordinate(
@@ -93,7 +98,8 @@ void PathTimeGraph::SetupObstacles(
 {
     for (const Obstacle* obstacle : obstacles)
     {
-        if (obstacle->IsVirtual())
+        if (obstacle->IsVirtual()) //? 虚拟障碍物代表什么？交通规则？手动添加的后续处理的约束？
+        //* 参考链接:Apollo Lattice Planner从学习到放弃.额不....到实践 - 信的札的文章 - 知乎 https://zhuanlan.zhihu.com/p/164635074
         {
             continue;
         }
@@ -106,19 +112,20 @@ void PathTimeGraph::SetupObstacles(
             SetDynamicObstacle(obstacle, discretized_ref_points);
         }
     }
-
+    //* 使用std::sort函数对静态障碍物的SL边界进行排序，排序依据是SL边界的起始s值（即路径上的位置）
     std::sort(static_obs_sl_boundaries_.begin(),
               static_obs_sl_boundaries_.end(),
               [](const SLBoundary& sl0, const SLBoundary& sl1) {
                   return sl0.start_s() < sl1.start_s();
               });
-
+    //* 遍历path_time_obstacle_map_（一个映射，键为障碍物ID，值为路径时间障碍物），并将所有路径时间障碍物添加到path_time_obstacles_向量中
     for (auto& path_time_obstacle : path_time_obstacle_map_)
     {
         path_time_obstacles_.push_back(path_time_obstacle.second);
     }
 }
 
+//* 静态障碍物在 S-L 图中投影
 void PathTimeGraph::SetStaticObstacle(
         const Obstacle* obstacle,
         const std::vector<PathPoint>& discretized_ref_points)
@@ -133,6 +140,7 @@ void PathTimeGraph::SetStaticObstacle(
     double right_width = FLAGS_default_reference_line_width * 0.5;
     ptr_reference_line_info_->reference_line().GetLaneWidth(
             sl_boundary.start_s(), &left_width, &right_width);
+    //* 检查障碍物是否在路径范围内
     if (sl_boundary.start_s() > path_range_.second ||
         sl_boundary.end_s() < path_range_.first ||
         sl_boundary.start_l() > left_width ||
@@ -167,17 +175,18 @@ void PathTimeGraph::SetDynamicObstacle(
     double relative_time = time_range_.first;
     while (relative_time < time_range_.second)
     {
-        TrajectoryPoint point = obstacle->GetPointAtTime(relative_time);
-        Box2d box = obstacle->GetBoundingBox(point);
+        TrajectoryPoint point = obstacle->GetPointAtTime(relative_time); // 调用obstacle->GetPointAtTime(relative_time)获取障碍物在当前时间的点
+        Box2d box = obstacle->GetBoundingBox(point); // 调用obstacle->GetBoundingBox(point)获取障碍物在当前时间的边界框
         SLBoundary sl_boundary = ComputeObstacleBoundary(
                 box.GetAllCorners(), discretized_ref_points);
-
+        //调用ComputeObstacleBoundary函数，传入边界框的所有角点和离散化参考点，计算障碍物的SL边界
         double left_width = FLAGS_default_reference_line_width * 0.5;
         double right_width = FLAGS_default_reference_line_width * 0.5;
         ptr_reference_line_info_->reference_line().GetLaneWidth(
                 sl_boundary.start_s(), &left_width, &right_width);
 
         // The obstacle is not shown on the region to be considered.
+        //* 检查障碍物是否在考虑区域内
         if (sl_boundary.start_s() > path_range_.second ||
             sl_boundary.end_s() < path_range_.first ||
             sl_boundary.start_l() > left_width ||
@@ -239,6 +248,7 @@ bool PathTimeGraph::GetPathTimeObstacle(const std::string& obstacle_id,
     return true;
 }
 
+//! 获取路径时间图（PathTimeGraph）中在特定时间t时的阻塞区间。函数返回一个包含阻塞区间的向量，每个区间由一对双精度浮点数（std::pair<double, double>）表示，分别表示区间的下限和上限。
 std::vector<std::pair<double, double>> PathTimeGraph::GetPathBlockingIntervals(
         const double t) const
 {
@@ -250,6 +260,7 @@ std::vector<std::pair<double, double>> PathTimeGraph::GetPathBlockingIntervals(
         {
             continue;
         }
+        //! 使用线性插值（lerp）函数计算在时间t时，障碍物的上边界s_upper和下边界s_lower。
         double s_upper = lerp(pt_obstacle.upper_left_point().s(),
                               pt_obstacle.upper_left_point().t(),
                               pt_obstacle.upper_right_point().s(),
@@ -288,6 +299,7 @@ std::pair<double, double> PathTimeGraph::get_time_range() const
     return time_range_;
 }
 
+//? 这个是什么目的
 std::vector<STPoint> PathTimeGraph::GetObstacleSurroundingPoints(
         const std::string& obstacle_id, const double s_dist,
         const double t_min_density) const
@@ -351,6 +363,7 @@ bool PathTimeGraph::IsObstacleInGraph(const std::string& obstacle_id)
            path_time_obstacle_map_.end();
 }
 
+//! 该函数的目的是计算路径在横向（左右）上的边界，考虑了车辆自身的宽度和静态障碍物的影响
 std::vector<std::pair<double, double>> PathTimeGraph::GetLateralBounds(
         const double s_start, const double s_end, const double s_resolution)
 {
@@ -375,6 +388,7 @@ std::vector<std::pair<double, double>> PathTimeGraph::GetLateralBounds(
                 s_curr, &left_width, &right_width);
         double ego_d_lower = init_d_[0] - ego_width / 2.0;
         double ego_d_upper = init_d_[0] + ego_width / 2.0;
+        //* 遍历每个离散点，计算并初始化其横向边界。边界由参考线宽度和车辆宽度决定，并考虑了一定的缓冲区（FLAGS_bound_buffer）
         bounds.emplace_back(
                 std::min(-right_width, ego_d_lower - FLAGS_bound_buffer),
                 std::max(left_width, ego_d_upper + FLAGS_bound_buffer));
@@ -411,6 +425,7 @@ void PathTimeGraph::UpdateLateralBoundsByObstacle(
     {
         return;
     }
+    //? 使用std::lower_bound和std::upper_bound在离散化路径中查找障碍物起始位置的迭代器。这些迭代器用于确定障碍物在路径中的起始和结束索引
     auto start_iter =
             std::lower_bound(discretized_path.begin(), discretized_path.end(),
                              sl_boundary.start_s());
@@ -419,6 +434,14 @@ void PathTimeGraph::UpdateLateralBoundsByObstacle(
                              sl_boundary.start_s());
     size_t start_index = start_iter - discretized_path.begin();
     size_t end_index = end_iter - discretized_path.begin();
+
+    //! 根据障碍物的横向边界（start_l和end_l），函数更新路径的横向边界
+    /*
+    如果障碍物的横向边界在[-FLAGS_numerical_epsilon, FLAGS_numerical_epsilon]范围内，则将路径的横向边界设置为[-FLAGS_numerical_epsilon, FLAGS_numerical_epsilon]。
+    如果障碍物的横向边界小于FLAGS_numerical_epsilon，则将路径的横向边界的左边界更新为障碍物右边界加上一个缓冲区（FLAGS_nudge_buffer）。
+    如果障碍物的横向边界大于-FLAGS_numerical_epsilon，则将路径的横向边界的右边界更新为障碍物左边界减去一个缓冲区（FLAGS_nudge_buffer）。
+    */
+
     if (sl_boundary.end_l() > -FLAGS_numerical_epsilon &&
         sl_boundary.start_l() < FLAGS_numerical_epsilon)
     {

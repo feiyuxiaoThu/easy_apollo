@@ -137,6 +137,11 @@ void CollisionChecker::BuildPredictedEnvironment(
     // then, ignore all obstacles from the same lane.
     bool ego_vehicle_in_lane = IsEgoVehicleInLane(ego_vehicle_s, ego_vehicle_d);
     std::vector<const Obstacle*> obstacles_considered;
+    //! 筛选碰撞检测需要考虑的障碍物
+    /*
+    1. 忽略虚拟障碍物。
+    2. 如果自车在车道内，忽略在自车后面的障碍物或不在路径时间图中的障碍物。
+    */
     for (const Obstacle* obstacle : obstacles)
     {
         if (obstacle->IsVirtual())
@@ -153,7 +158,13 @@ void CollisionChecker::BuildPredictedEnvironment(
 
         obstacles_considered.push_back(obstacle);
     }
-
+    //! 预测障碍物的未来位置
+    /*
+    初始化相对时间为0。
+    在每个时间步长内，计算每个障碍物的预测位置和边界框，并将其扩展以包含碰撞缓冲区。
+    将预测的边界框添加到predicted_bounding_rectangles_中。
+    增加相对时间，直到达到轨迹时间长度。
+    */
     double relative_time = 0.0;
     while (relative_time < FLAGS_trajectory_time_length)
     {
@@ -164,8 +175,8 @@ void CollisionChecker::BuildPredictedEnvironment(
             // Obstacle::GetPointAtTime has handled this case.
             TrajectoryPoint point = obstacle->GetPointAtTime(relative_time);
             Box2d box = obstacle->GetBoundingBox(point);
-            box.LongitudinalExtend(2.0 * FLAGS_lon_collision_buffer);
-            box.LateralExtend(2.0 * FLAGS_lat_collision_buffer);
+            box.LongitudinalExtend(2.0 * FLAGS_lon_collision_buffer); // 膨胀
+            box.LateralExtend(2.0 * FLAGS_lat_collision_buffer); // 膨胀
             predicted_env.push_back(std::move(box));
         }
         predicted_bounding_rectangles_.push_back(std::move(predicted_env));
@@ -180,6 +191,7 @@ bool CollisionChecker::IsEgoVehicleInLane(const double ego_vehicle_s,
     double right_width = FLAGS_default_reference_line_width * 0.5;
     ptr_reference_line_info_->reference_line().GetLaneWidth(
             ego_vehicle_s, &left_width, &right_width);
+    //根据车辆在参考线上的位置（ego_vehicle_s），更新left_width和right_width为实际的车道宽度。
     return ego_vehicle_d < left_width && ego_vehicle_d > -right_width;
 }
 
@@ -193,7 +205,11 @@ bool CollisionChecker::IsObstacleBehindEgoVehicle(
             PathMatcher::GetPathFrenetCoordinate(discretized_reference_line,
                                                  point.path_point().x(),
                                                  point.path_point().y());
-
+    //判断障碍物是否在主车后方且在车道内
+    /*
+    如果障碍物的s坐标小于主车的s坐标（即在主车后方），并且障碍物的l坐标的绝对值小于车道宽度的一半（即在主车的车道内），则返回true，表示障碍物在主车后方。
+    */
+    //* 即障碍物需要在后方并且在车道内才会被忽略
     if (obstacle_reference_line_position.first < ego_vehicle_s &&
         std::fabs(obstacle_reference_line_position.second) < half_lane_width)
     {
@@ -210,10 +226,12 @@ int generate_polygon_path(double safe_buffer,
     const auto& veh_param =
             common::VehicleConfigHelper::GetConfig().vehicle_param();
 
+    //* 使用车辆参数初始化车辆的多边形边界
     Polygon2D veh_local_poly = init_adv_box(veh_param);
 
     Polygon2D safe_veh_poly;
 
+    //* 创建一个新的多边形边界safe_veh_poly，其宽度是veh_local_poly的宽度加上安全缓冲区
     extend_adv_box_by_width(&safe_veh_poly, safe_buffer, &veh_local_poly);
 
     size_t path_size = path_points.size();
@@ -224,6 +242,7 @@ int generate_polygon_path(double safe_buffer,
 
     polygon_path.clear();
 
+    //* 遍历路径点，将每个路径点转换为全局坐标，并生成相应的多边形边界
     for (size_t i = 0; i < path_size; i++)
     {
         const PathPoint& point = path_points[i];
@@ -246,6 +265,8 @@ int generate_polygon_path(double safe_buffer,
                           std::vector<Polygon2D>& polygon_path,
                           int path_check_size)
 {
+    //! 根据给定的路径点生成一个多边形路径。这个多边形路径表示在路径上的每个点处车辆的安全边界。
+    //* 这个函数应当为用于处理本车的路径点
     const auto& veh_param =
             common::VehicleConfigHelper::GetConfig().vehicle_param();
 
@@ -290,12 +311,14 @@ bool check_path_collision_with_static_obstacle(
     Polygon2D obs_polygon;
 
     cvt_box2d_to_polygon(&obs_polygon, obs_box);
+    //* 获取障碍物的感知边界框并转换为多边形
 
     if (obs_polygon.vertex_num != 4)
     {
         AERROR << "obs box point size is not 4";
         return false;
     }
+    //? 如果顶点数不为4，记录错误并返回false 是否因为对于异性障碍物不处理？？？
 
     int point_size = polygon_path.size();
     for (int i = 0; i < point_size; i++)
@@ -304,7 +327,7 @@ bool check_path_collision_with_static_obstacle(
 
         gjk_fast_collision_detection(&is_collision, &point_polygon,
                                      &obs_polygon, 0.1);
-
+        //* 使用GJK快速碰撞检测算法检查当前路径多边形与障碍物多边形是否发生碰撞
         if (is_collision)
         {
             *collision_index = i;
@@ -326,6 +349,7 @@ bool check_path_collision_with_dynamic_obstacle_point(
         const std::vector<Polygon2D>& polygon_path,
         const Polygon2D& obs_polygon)
 {
+    //! 在st_boundary_mapper.cc中基于障碍物预测轨迹中的每一个点采样进行碰撞检测的判断
     *start_collision_index = -1;
     *end_collision_index = -1;
 

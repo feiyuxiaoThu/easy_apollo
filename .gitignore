@@ -99,3 +99,5 @@ cmake-build*
 
 apollo_docs/*
 
+easy_apollo.udb
+cxx2flow-linux-amd64

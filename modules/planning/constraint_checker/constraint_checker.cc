@@ -36,7 +36,8 @@ template <typename T> bool WithinRange(const T v, const T lower, const T upper)
     return lower <= v && v <= upper;
 }
 }  // namespace
-
+//! 可以参考 autoware 的完整的规划评估模块设计，见 https://autowarefoundation.github.io/autoware.universe/main/evaluator/autoware_planning_evaluator/
+//* 接收三个参数：trajectory（离散轨迹），adc_v（ADC的速度），traj_type（轨迹类型）。函数返回一个枚举值Result，表示轨迹是否有效以及无效的原因
 ConstraintChecker::Result ConstraintChecker::ValidTrajectory(
         const DiscretizedTrajectory& trajectory, const double adc_v,
         ADCTrajectory::TrajectoryType traj_type)
